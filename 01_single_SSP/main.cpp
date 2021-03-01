@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	MatrixXd VO,V;
 	MatrixXi FO,F;
 	{
-		igl::read_triangle_mesh("../../meshes/ogre_sim.obj", VO, FO);
+		igl::read_triangle_mesh("../../meshes/bunny.obj", VO, FO);
 		cout << "original mesh: |V| " << VO.rows() << ", |F|: " << FO.rows() << endl;
 	}
 
