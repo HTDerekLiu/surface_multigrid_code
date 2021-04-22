@@ -29,12 +29,12 @@ int main(int argc, char *argv[])
 	VectorXi b;
 	{
 		// load mesh
-		igl::read_triangle_mesh("../../meshes/hilbert_cube_remesh.obj", V, F);
+		igl::read_triangle_mesh("../../meshes/hilbert_cube.obj", V, F);
 
 		// load constrained points
 		MatrixXd V_known;
 		MatrixXi F_known;
-		igl::read_triangle_mesh("../../meshes/hilbert_cube_remesh_known.obj", V_known, F_known);
+		igl::read_triangle_mesh("../../meshes/hilbert_cube_known.obj", V_known, F_known);
 
 		// get constrained vertex index (TODO: make it faster by using spatial hash)
 		b.resize(V_known.rows());
@@ -61,13 +61,11 @@ int main(int argc, char *argv[])
 	}
 
 	// construct multigrid hierarchy
-	int min_coarsest_nV = stoi(argv[1]);
+	int min_coarsest_nV = 500;
 	float coarsening_ratio = 0.25;
 	int decimation_type = 1;
 	vector<mg_data> mg;
 	mg_precompute(V,F,coarsening_ratio, min_coarsest_nV, decimation_type, mg);
-	igl::writeOBJ("coarse.obj",mg[mg.size()-1].V,mg[mg.size()-1].F);
-	igl::writeOBJ("orig.obj",mg[0].V,mg[0].F);
 
 	// construct a toy Poisson problem 
 	// solve A*z = B, s.t. z(b) = bval
