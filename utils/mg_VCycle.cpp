@@ -125,22 +125,56 @@ void relax(
   int dim = u.cols();
   int numV = mg[lv].A.rows();
 
-  // implement gauss seidel (no precomputation)
-  for (int iter = 0; iter < iters; iter++) {
-        for (int ri = 0; ri < dim; ri++) {
-            for (int colIdx = 0; colIdx < mg[lv].A.rows(); colIdx++) {
-                // Eigen Sparse matrices are column major
-                // For convenience, we compute z' * (L+U)' instead of (L+U) * z
-                double sum = 0;
-                for (Eigen::SparseMatrix<double>::InnerIterator it(mg[lv].A, colIdx); it; ++it) {
-                    if (it.row() != colIdx) {
-                        sum += it.value() * u(it.row(), ri);
-                    }
-                }
-                u(colIdx, ri) = (B(colIdx, ri) - sum) / mg[lv].A_diag(colIdx);
-            }
-        }
-    }
+  // // implement gauss seidel (no precomputation)
+  // for (int iter = 0; iter < iters; iter++) {
+  //       for (int ri = 0; ri < dim; ri++) {
+  //           for (int colIdx = 0; colIdx < mg[lv].A.rows(); colIdx++) {
+  //               // Eigen Sparse matrices are column major
+  //               // For convenience, we compute z' * (L+U)' instead of (L+U) * z
+  //               double sum = 0;
+  //               for (Eigen::SparseMatrix<double>::InnerIterator it(mg[lv].A, colIdx); it; ++it) {
+  //                   if (it.row() != colIdx) {
+  //                       sum += it.value() * u(it.row(), ri);
+  //                   }
+  //               }
+  //               u(colIdx, ri) = (B(colIdx, ri) - sum) / mg[lv].A_diag(colIdx);
+  //           }
+  //       }
+  //   }
+
+  // if statement is necessary here: boost the performance
+  if (dim == 1) {
+      for (int iter = 0; iter < iters; iter++) {
+          for (int colIdx = 0; colIdx < mg[lv].A.rows(); colIdx++) {
+              // Eigen Sparse matrices are column major
+              // For convenience, we compute z' * (L+U)' instead of (L+U) * z
+              double sum = 0;
+              for (Eigen::SparseMatrix<double>::InnerIterator it(mg[lv].A, colIdx); it; ++it) {
+                  if (it.row() != colIdx) {
+                      sum += it.value() * u(it.row());
+                  }
+              }
+              u(colIdx) = (B(colIdx) - sum) / mg[lv].A_diag(colIdx);
+          }
+      }
+  }
+  else {
+      for (int iter = 0; iter < iters; iter++) {
+          for (int ri = 0; ri < dim; ri++) {
+              for (int colIdx = 0; colIdx < mg[lv].A.rows(); colIdx++) {
+                  // Eigen Sparse matrices are column major
+                  // For convenience, we compute z' * (L+U)' instead of (L+U) * z
+                  double sum = 0;
+                  for (Eigen::SparseMatrix<double>::InnerIterator it(mg[lv].A, colIdx); it; ++it) {
+                      if (it.row() != colIdx) {
+                          sum += it.value() * u(it.row(), ri);
+                      }
+                  }
+                  u(colIdx, ri) = (B(colIdx, ri) - sum) / mg[lv].A_diag(colIdx);
+              }
+          }
+      }
+  }
 }
 
 

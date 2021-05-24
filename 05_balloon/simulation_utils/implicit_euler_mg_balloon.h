@@ -65,7 +65,7 @@ double implicit_euler_mg_balloon(const MeshConnectivity & mesh,
         tmp_g = -tmp_g;
 
         {
-            PROFC_NODE("MG time");
+            // PROFC_NODE("MG time");
             // mqwf multigrid
             min_quad_with_fixed_mg_data solverData;
             Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> coarseSolver;
@@ -76,30 +76,6 @@ double implicit_euler_mg_balloon(const MeshConnectivity & mesh,
             min_quad_with_fixed_mg_solve(solverData, tmp_g, dxInit, coarseSolver,mg_tolerance, mg, dx, rHis);
             std::cout << "euler converge: " << tmp_g.transpose() * dx << std::endl;
         }
-
-
-        // // min_quad_with_fixed: dirichlet boundary condition
-        // igl::min_quad_with_fixed_data<double> mqwf;
-        // igl::min_quad_with_fixed_precompute(tmp_H, bi, Aeq, true, mqwf);
-        // igl::min_quad_with_fixed_solve(mqwf, tmp_g, bc, Beq, dx);
-
-        // //check for convergence
-        // if(tmp_g.transpose() * dx > -1e-3) {
-        //     std::cout << "break: " << i << std::endl;
-        //     break;
-        // }
-
-        // solver.compute(tmp_H); // precompute
-        // if (solver.info() != Eigen::Success) {
-        //     std::cout<<"newtons_method: decomposition failed\n";
-        //     return std::numeric_limits<double>::infinity();
-        // }
-        // dx = -solver.solve(tmp_g); // solve
-        // if (solver.info() != Eigen::Success) {
-        //     std::cout<<"newtons_method: solve failed\n";
-        //     return std::numeric_limits<double>::infinity();
-        // }
-
 
         //perform backtracking on the newton search direction
         //Guarantee that step is a descent step and that it will make sufficient decreate
@@ -142,16 +118,6 @@ double implicit_euler_mg_balloon(const MeshConnectivity & mesh,
         for (int j = 0; j < curPos.rows(); j++) {
             curPos.row(j) += dt * qdot.segment<3>(3 * j);
         }
-
-        // // a simple collision handler
-        // for (int j = 0; j < curPos.rows(); j++) {
-        //     if (curPos(j,1) < 0) {
-        //         curPos(j,1) = 0;
-        //         const double cr = 10;
-        //         qdot(3*j+1) = -qdot(3*j+1) / cr;
-        //     }
-        // }
-
     }
 
     return 0;

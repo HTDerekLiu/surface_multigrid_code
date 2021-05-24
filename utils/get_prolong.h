@@ -31,4 +31,15 @@ void get_prolong(
   Eigen::MatrixXd & V,
   Eigen::MatrixXi & F,
   Eigen::SparseMatrix<double> & P);
+
+// the same function as "get_prolong", but the output prolongation P is a 3#Vf by 3#V matrix
+
+void get_prolong_block(
+	const Eigen::MatrixXd & Vf,
+	const Eigen::MatrixXi & Ff,
+  const int & tarF,
+  const int & dec_type,
+  Eigen::MatrixXd & V,
+  Eigen::MatrixXi & F,
+  Eigen::SparseMatrix<double> & P);
 #endif

@@ -35,10 +35,10 @@ void min_quad_with_fixed_mg_precompute(
       mg[lv].A.coeffRef(ii,ii) += 1e-12; 
   }
 
-  // // store diagonal values
-  // for (int lv = 0; lv < mg.size(); lv++) {
-  //     mg[lv].A_diag = mg[lv].A.diagonal();
-  // }
+  // store diagonal values
+  for (int lv = 0; lv < mg.size(); lv++) {
+      mg[lv].A_diag = mg[lv].A.diagonal();
+  }
 
   if (verbose)
     cout << "finish getting matrices\n";
