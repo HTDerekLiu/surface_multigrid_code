@@ -11,5 +11,5 @@ make -j8
 If all goes well, you should be able to find and run the executable `main_bin` directly with no arguments.
 
 ## Demo
-<img src="./04.png" width="100%">
+<img src="../assets/04.png" width="100%">
 Show the usage of our multigrid solver on surface meshes without boundaries by solving a simple Poisson problem.
