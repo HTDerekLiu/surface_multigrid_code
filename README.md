@@ -13,4 +13,13 @@ To get started, clone this repository *recursively*
 ```
 git clone --recursive https://github.com/HTDerekLiu/surface_multigrid_code.git
 ```
+On all platforms, we assume you have installed cmake and a modern c++ compiler on Mac OS X, Linux, or Windows.
 
+The main folder contains 6 separate examples that demonstrate some core functionalities and typical usage of our code. All of them have a similar directory and file layout:
+```
+cmake/
+  CMakeLists.txt
+README.md
+main.cpp
+```
+They share a common `src` folder for source code and a `meshes` for input meshes.
