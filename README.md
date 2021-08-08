@@ -15,6 +15,8 @@ git clone --recursive https://github.com/HTDerekLiu/surface_multigrid_code.git
 ```
 On all platforms, we assume you have installed cmake and a modern c++ compiler on Mac OS X, Linux, or Windows.
 
+<br>
+
 The main folder contains 6 separate examples that demonstrate some core functionalities and typical usage of our code. All of them have a similar directory and file layout:
 ```
 cmake/
@@ -22,4 +24,14 @@ cmake/
 README.md
 main.cpp
 ```
-They share a common `src` folder for source code and a `meshes` for input meshes.
+And they share a common `src` folder for source code and a `meshes` folder for input meshes.
+
+Inside each subfolder, for example `01_single_SSP`, compile in release mode using the following typical cmake/make build routine:
+```
+cd 01_single_SSP
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make -j8
+```
+If all goes well, you should be able to find and run the executable `main_bin` directly with no arguments.
+
