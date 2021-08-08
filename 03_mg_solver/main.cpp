@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 		cout << "original mesh: |V| " << V.rows() << ", |F|: " << F.rows() << endl;
 	}
 
-	// construct multigrid hierarchy
+	// construct the multigrid hierarchy
 	int min_coarsest_nV = 500;
 	float coarsening_ratio = 0.25;
 	int decimation_type = 1;
@@ -54,7 +54,6 @@ int main(int argc, char *argv[])
 	// get RHS
 	SparseMatrix<double> M;
 	igl::massmatrix(V,F,igl::MASSMATRIX_TYPE_VORONOI,M);
-
 	VectorXd ones(V.rows());
 	ones.setOnes();
 	VectorXd B = M * ones;

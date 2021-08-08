@@ -25,14 +25,14 @@ int main(int argc, char *argv[])
 		cout << "original mesh: |V| " << VO.rows() << ", |F|: " << FO.rows() << endl;
 	}
 
-	// construct multigrid hierarchy
+	// construct the multigrid hierarchy
 	int min_coarsest_nV = 500;
 	float coarsening_ratio = 0.25;
 	int decimation_type = 1;
 	vector<mg_data> mg;
 	mg_precompute(VO,FO,coarsening_ratio, min_coarsest_nV, decimation_type, mg);
 
-	//Viewer that shows all functions: zexact, znoisy, zl, zh
+	// Visualize the self parametrization
 	MatrixXd pt;
 	igl::opengl::glfw::Viewer viewer;
 	viewer.data().set_mesh(mg[0].V, mg[0].F);

@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 		cout << "original mesh: |V| " << VO.rows() << ", |F|: " << FO.rows() << endl;
 	}
 
-	// decimate 
+	// decimate the input mesh and obtain the prolongation operator via SSP
 	SparseMatrix<double> P;
 	int tarF = 1000; // target number of faces
 	int dec_type = 0; // decimation type (0:qslim, 1:midpoint, 2:vertex removal)

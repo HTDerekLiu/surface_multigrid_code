@@ -1,24 +1,16 @@
 #include "mg_precompute.h"
 
-void mg_precompute(
-	const Eigen::MatrixXd & Vf,
-	const Eigen::MatrixXi & Ff,
-  std::vector<mg_data> & mg)
-{
-	int decimation_type = 1; // default: mid point decimation
-	mg_precompute(Vf,Ff,decimation_type, mg);
-}
-
-void mg_precompute(
-	const Eigen::MatrixXd & Vf,
-	const Eigen::MatrixXi & Ff,
-	const int & dec_type,
-  std::vector<mg_data> & mg)
-{
-	float coarsening_ratio = 0.25;
-	int min_coarsest_nV = 500;
-	mg_precompute(Vf,Ff,coarsening_ratio,min_coarsest_nV,dec_type, mg);
-}
+// Build up a multi-level hierarchy for the surface multigrid solver
+//
+// Inputs:
+//   Vf    #Vf-by-3 input vertex positions 
+//   Ff    #Ff-by-3 input triangle indices
+//   ratio  decimation rate between levels
+//   nVCoarset  desired number of output faces for the coarest level
+//   dec_type decimation type (0:qslim, 1:midpoint, 2:vertex removal)
+//
+// Outputs:
+//   mg    a vector that contains precomputed information for each level
 
 void mg_precompute(
 	const Eigen::MatrixXd & Vf,
@@ -26,7 +18,7 @@ void mg_precompute(
 	const float & ratio,
 	const int & nVCoarsest,
 	const int & dec_type,
-  std::vector<mg_data> & mg)
+  	std::vector<mg_data> & mg)
 {
 	using namespace std;
 	using namespace Eigen;
@@ -92,4 +84,24 @@ void mg_precompute(
 	cout << "============\n";
 	cout << "numLv: " << mg.size() << endl;
 	cout << "|V_coarsest|: " << mg[mg.size()-1].V.rows() << endl;
+}
+
+void mg_precompute(
+	const Eigen::MatrixXd & Vf,
+	const Eigen::MatrixXi & Ff,
+  	std::vector<mg_data> & mg)
+{
+	int decimation_type = 1; // default: mid point decimation
+	mg_precompute(Vf,Ff,decimation_type, mg);
+}
+
+void mg_precompute(
+	const Eigen::MatrixXd & Vf,
+	const Eigen::MatrixXi & Ff,
+	const int & dec_type,
+    std::vector<mg_data> & mg)
+{
+	float coarsening_ratio = 0.25;
+	int min_coarsest_nV = 500;
+	mg_precompute(Vf,Ff,coarsening_ratio,min_coarsest_nV,dec_type, mg);
 }

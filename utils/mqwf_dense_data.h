@@ -10,7 +10,6 @@ struct mqwf_dense_data
   Eigen::VectorXi k; // known 
   Eigen::VectorXi u; // unknown
   Eigen::LDLT<Eigen::MatrixXd> Auu_pref;
-  // Eigen::LLT<Eigen::MatrixXd> Auu_pref;
   Eigen::MatrixXd Auk_plus_AkuT;
 };
 

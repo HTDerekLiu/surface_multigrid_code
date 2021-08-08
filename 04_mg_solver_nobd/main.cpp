@@ -28,15 +28,15 @@ int main(int argc, char *argv[])
 	MatrixXi F;
 	VectorXi b;
 	{
-		// load mesh
+		// load mesh: notice that hilbert cube doesn't have boundaries
 		igl::read_triangle_mesh("../../meshes/hilbert_cube.obj", V, F);
 
-		// load constrained points
+		// load prescribed constrained points
 		MatrixXd V_known;
 		MatrixXi F_known;
 		igl::read_triangle_mesh("../../meshes/hilbert_cube_known.obj", V_known, F_known);
 
-		// get constrained vertex index (TODO: make it faster by using spatial hash)
+		// get constrained vertex indices (TODO: make it faster by using spatial hash)
 		b.resize(V_known.rows());
 		for (int ii=0; ii<V_known.rows(); ii++)
 		{
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 
 	// construct a toy Poisson problem 
 	// solve A*z = B, s.t. z(b) = bval
-	// where b are the boundary vertices (thus this demo is for meshes with boundaries)
+	// where b are constrained vertex indices
 	SparseMatrix<double> A;
 	igl::cotmatrix(V,F,A);
 	A = -A;
