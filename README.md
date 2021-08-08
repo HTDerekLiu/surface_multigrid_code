@@ -36,6 +36,7 @@ And they share a common `src` folder for source code and a `meshes` folder for i
 Inside each subfolder, for example `01_single_SSP`, compile in release mode using the following typical cmake/make build routine:
 ```
 cd 01_single_SSP
+mkdir build
 cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j8
@@ -44,3 +45,5 @@ If all goes well, you should be able to find and run the executable `main_bin` d
 
 ## Usage
 We aim to make our multigrid solver as easy to use as possible. To use our multigrid solver for linear systems defined on a fixed surface mesh i.e. typically for solving `Ax = b`, first call `mg_precompute` to construct the multigrid hierarchy. Then, similar to [libigl](https://github.com/libigl/libigl/)'s style of calling direct solvers [min_quad_with_fixed](https://github.com/libigl/libigl/blob/main/include/igl/min_quad_with_fixed.h), our multigrid solver can be used by calling `min_quad_with_fixed_mg_precompute` given a left-hand-side system matrix `A` and then calling `min_quad_with_fixed_mg_solve` to solve the system with the right-hand-side `b`. Please refer to the above examples for more details.
+
+If any issues or questions, please do not hesitate to contact [hsuehtil@cs.toronto.edu]() or [jiayieris.zhang@mail.utoronto.ca]().

@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	viewer.callback_key_down =
 	[&](igl::opengl::glfw::Viewer & viewer, unsigned char key, int mod)->bool
 	{
-			switch(key) {
+		switch(key) {
 			case '0':
 				viewer.data().clear();
 				viewer.data().set_mesh(mg[0].V,mg[0].F);
@@ -60,8 +60,8 @@ int main(int argc, char *argv[])
 				break;
 			default:
 				return false;
-			}
-			return true;
+		}
+		return true;
 	};
 	viewer.launch();
 	

@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 
 	MatrixXd pt = P * V;
 
-	// Plot the results
+	// visualize the prolongation operator
 	igl::opengl::glfw::Viewer viewer;
 	{
 		viewer.data().set_mesh(V, F);
