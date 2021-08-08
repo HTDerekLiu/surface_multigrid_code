@@ -1,4 +1,4 @@
-# demo of precomputing multigrid hierarchy
+# Precomputation of the Multigrid Hierarchy
 
 ```
 mkdir build

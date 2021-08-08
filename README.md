@@ -23,12 +23,12 @@ cmake/
 README.md
 main.cpp
 ```
-+ `01_single_SSP/`: demonstrate the construction of our prolongation operator via successive self-parametrization and visualize the mapping by projecting the fine mesh vertices onto the coarse mesh.
-+ `02_mg_hierarchy/`: demonstrate the construction of our multigrid hierarchy and visualize the corresponding prolongation operators between different levels.
-+ `03_mg_solver/`: demonstrate the usage of our surface multigrid solver on meshes with boundaries.
-+ `04_mg_solver_nobd/`: demonstrate the usage of our surface multigrid solver on meshes without boundaries.
-+ `05_example_mean_curvature_flow/`: demonstrate the usage of our surface multigrid solver in a real-world application e.g. mean curvature flow.
-+ `06_example_balloon_sim/`: demonstrate the usage of our surface multigrid solver in a real-world application e.g. balloon simulation.
++ `01_single_SSP/`: visualize our prolongation operator by mapping the fine mesh vertices onto the coarse mesh.
++ `02_mg_hierarchy/`: show the construction of our multigrid hierarchy and visualize the corresponding prolongation operators between different levels.
++ `03_mg_solver/`: show the usage of our multigrid solver on surface meshes with boundaries.
++ `04_mg_solver_nobd/`: show the usage of our multigrid solver on surface meshes without boundaries.
++ `05_example_mean_curvature_flow/`: show the usage of our multigrid solver in mean curvature flow.
++ `06_example_balloon_sim/`: show the usage of our multigrid solver in balloon simulation.
 
 And they share a common `src` folder for source code and a `meshes` folder for input meshes.
 
@@ -42,3 +42,5 @@ make -j8
 ```
 If all goes well, you should be able to find and run the executable `main_bin` directly with no arguments.
 
+## Usage
+We aim to make our multigrid solver as easy to use as possible. To use our multigrid solver for linear systems defined on a fixed surface mesh, first call `mg_precompute` to construct the multigrid hierarchy. Then, similar to [libigl](https://github.com/libigl/libigl/)'s style of calling direct solvers [min_quad_with_fixed](https://github.com/libigl/libigl/blob/main/include/igl/min_quad_with_fixed.h), our multigrid solver can be used by calling `min_quad_with_fixed_mg_precompute` given a left-hand-side system matrix `A` and then calling `min_quad_with_fixed_mg_solve` to solve the system with the right-hand-side `b`. Please refer to the above examples for more details.
