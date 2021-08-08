@@ -1,1 +1,1 @@
-# Single Level Successive Self-parameterization
+# Single Level Successive Self-Parameterization
