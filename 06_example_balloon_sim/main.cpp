@@ -45,7 +45,7 @@ double dt = 0.001;
 int frame_num = 1000;
 int matid;
 int sffid;
-bool useMG = false;
+bool useMG = true;
 
 Eigen::MatrixXd curPos, curPosT, origV;
 Eigen::VectorXd q, qdot, fExt;
@@ -133,20 +133,21 @@ void runSimulation(igl::opengl::glfw::Viewer &viewer,
             implicit_euler_balloon(mesh, M, curPos, qdot, fExt, bi, edgeDOFs, *mat, dt, thicknesses, abar, bbar);
         }
 
-        // save the meshes
-        {
-            string name = "output";
-            name.append(6-to_string(counter).length(), '0');
-            if (useMG)
-                name = "../mg_results/" + name + to_string(counter) + ".obj";
-            else
-                name = "../direct_results/" + name + to_string(counter) + ".obj";
-            igl::writeOBJ(name, curPos, mesh.faces());
-            counter++;
-        }
+        // // save the meshes
+        // {
+        //     string name = "output";
+        //     name.append(6-to_string(counter).length(), '0');
+        //     if (useMG)
+        //         name = "../mg_results/" + name + to_string(counter) + ".obj";
+        //     else
+        //         name = "../direct_results/" + name + to_string(counter) + ".obj";
+        //     igl::writeOBJ(name, curPos, mesh.faces());
+        //     counter++;
+        // }
     }
 
     viewer.data().set_vertices(curPos);
+    viewer.data().compute_normals();
     // delete mat;
 }
 
@@ -155,7 +156,7 @@ int main(int argc, char *argv[])
     using namespace std;
     using namespace Eigen;
 
-    numSteps = 2;
+    numSteps = 1;
 
     // set up material parameters
     thickness = 1e-1; 
@@ -163,7 +164,8 @@ int main(int argc, char *argv[])
     matid = 0;
     sffid = 2;
 
-    igl::readOBJ("../../meshes/bunny_140K_init.obj", origV, F);
+    igl::readOBJ("../../meshes/bunny_15K_init.obj", origV, F);
+    // igl::readOBJ("../../meshes/bunny_140K_init.obj", origV, F);
     
     // precompute multigrid hierarchy 
     mg_precompute_block(origV,F,mg);
@@ -247,6 +249,11 @@ int main(int argc, char *argv[])
 
     viewer.data().set_face_based(false);
     viewer.data().set_mesh(curPos, mesh.faces()); 
+    const Eigen::RowVector3d blue(149.0/255, 217.0/255, 244.0/255);
+    viewer.data().set_colors(blue);
+    Vector4f backColor;
+    backColor << 208/255., 237/255., 227/255., 1.;
+    viewer.core().background_color = backColor;
     viewer.launch();
 
 }
