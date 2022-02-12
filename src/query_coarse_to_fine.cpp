@@ -1,10 +1,10 @@
-#include "query_fine_to_coarse.h"
+#include "query_coarse_to_fine.h"
 
-void query_fine_to_coarse(
+void query_coarse_to_fine(
   const std::vector<single_collapse_data> & decInfo,
   const Eigen::VectorXi & IM,
   const std::vector<std::vector<int>> & decIM,
-  const Eigen::VectorXi & FIM,
+  const Eigen::VectorXi & IMF,
   Eigen::MatrixXd & BC,
   Eigen::MatrixXi & BF,
   Eigen::VectorXi & FIdx)
@@ -19,17 +19,33 @@ void query_fine_to_coarse(
   VectorXi queryCounts(BC.rows());
   queryCounts.setZero();
 
+  // convert vertex indices from V to VO
+  {
+    // change BF to be on fine mesh indices
+    for (int r=0; r<BF.rows(); r++){
+      for (int c=0; c<BF.cols(); c++){
+        BF(r,c) = IM(BF(r,c));
+      }
+    }
+  }
+
+  // convert vertex indices from V to VO
+  {
+    for (int ii=0; ii<FIdx.size(); ii++)
+      FIdx(ii) = IMF(FIdx(ii));
+  }
+
   // for (int qIdx=0; qIdx<numQuery; qIdx++)
   igl::parallel_for(
     numQuery,
     [&verbose, &FIdx, &BC, &BF, &decIM, &decInfo, &queryCounts](const int qIdx)
   {
-    // print progress
-    // if (qIdx % 10000 == 0) 
-      // cout << "fine to coarse : " << qIdx << "/" << BF.rows() << endl;
+    // // print progress
+    // if (qIdx % 1 == 0 && verbose) 
+    //   cout << "coarse to fine : " << qIdx << "/" << BF.rows() << endl;
 
     // go through the decInfo 
-    int dIdx = -1;
+    int dIdx = decInfo.size();
 
     while (true)
     {
@@ -39,9 +55,9 @@ void query_fine_to_coarse(
       // find the dIdx
       vector<int> dIdxList = decIM[queryFIdx];
       bool if_find_dIdx = false;
-      for (int ii=0; ii<dIdxList.size(); ii++)
+      for (int ii=dIdxList.size()-1; ii>-1; ii--)
       {
-        if (dIdx < dIdxList[ii])
+        if (dIdx > dIdxList[ii])
         {
           dIdx = dIdxList[ii];
           if_find_dIdx = true;
@@ -75,7 +91,7 @@ void query_fine_to_coarse(
         assert(v0_vec.size() == 1);
         assert(v1_vec.size() == 1);
         assert(v2_vec.size() == 1);
-      
+
         v0 = v0_vec(0);
         v1 = v1_vec(0);
         v2 = v2_vec(0);
@@ -83,20 +99,19 @@ void query_fine_to_coarse(
 
       // get query UV
       VectorXd queryUV = 
-          BC(qIdx,0) * decInfo[dIdx].UV_pre.row(v0)  
-        + BC(qIdx,1) * decInfo[dIdx].UV_pre.row(v1)
-        + BC(qIdx,2) * decInfo[dIdx].UV_pre.row(v2);
+          BC(qIdx,0) * decInfo[dIdx].UV_post.row(v0)  
+        + BC(qIdx,1) * decInfo[dIdx].UV_post.row(v1)
+        + BC(qIdx,2) * decInfo[dIdx].UV_post.row(v2);
 
       Eigen::MatrixXd B;
       {
         // PROFC_NODE("query: compute barycentric");
-        compute_barycentric(queryUV, decInfo[dIdx].UV_post, decInfo[dIdx].FUV_post,B);
+        compute_barycentric(queryUV, decInfo[dIdx].UV_pre, decInfo[dIdx].FUV_pre,B);
         if (verbose)
           cout << "B: \n" << B << endl; 
       }
 
       // snap to the closest one
-      // TODO: update this snapping operation (currently it is not robust)
       VectorXd distToValid = -B.rowwise().minCoeff();
       double minD = 1.0;
       int idxToFUV;
@@ -117,40 +132,15 @@ void query_fine_to_coarse(
 
       BC.row(qIdx) = B.row(idxToFUV);
 
-      BF(qIdx, 0) = decInfo[dIdx].subsetVIdx(decInfo[dIdx].FUV_post(idxToFUV,0));
-      BF(qIdx, 1) = decInfo[dIdx].subsetVIdx(decInfo[dIdx].FUV_post(idxToFUV,1));
-      BF(qIdx, 2) = decInfo[dIdx].subsetVIdx(decInfo[dIdx].FUV_post(idxToFUV,2));
-      FIdx(qIdx) = decInfo[dIdx].FIdx_post(idxToFUV);
-      
+      BF(qIdx, 0) = decInfo[dIdx].subsetVIdx(decInfo[dIdx].FUV_pre(idxToFUV,0));
+      BF(qIdx, 1) = decInfo[dIdx].subsetVIdx(decInfo[dIdx].FUV_pre(idxToFUV,1));
+      BF(qIdx, 2) = decInfo[dIdx].subsetVIdx(decInfo[dIdx].FUV_pre(idxToFUV,2));
+      FIdx(qIdx) = decInfo[dIdx].FIdx_pre(idxToFUV);
     }
-  }
-  ,1000);
-  
+  // };
+  },1000);
+
   if (verbose)
     cout << "finish query points\n";
-
-  // convert vertex indices from VO to V
-  {
-    VectorXi indexMap(IM.maxCoeff()+1);
-    indexMap.setZero();
-    for (int ii=0; ii<IM.size(); ii++)
-      indexMap(IM(ii)) = ii;
-
-    // change BF to be on coarse mesh indices
-    for (int r=0; r<BF.rows(); r++){
-      for (int c=0; c<BF.cols(); c++){
-        BF(r,c) = indexMap(BF(r,c));
-      }
-    }
-  }
-
-  // convert face indices
-  {
-    for (int ii=0; ii<FIdx.size(); ii++){
-      FIdx(ii) = FIM(FIdx(ii));
-    }
-  }
-
-
 
 }
