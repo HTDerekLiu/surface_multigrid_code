@@ -29,6 +29,7 @@ main.cpp
 + `04_mg_solver_nobd/`: show the usage of our multigrid solver on surface meshes without boundaries.
 + `05_example_mean_curvature_flow/`: show the usage of our multigrid solver in mean curvature flow.
 + `06_example_balloon_sim/`: show the usage of our multigrid solver in balloon simulation.
++ `07_coarse_to_fine/`: show how to use our successive parameterization to map points on the coarse mesh to the input fine mesh.
 
 And they share a common `src` folder for source code and a `meshes` folder for input meshes.
 
