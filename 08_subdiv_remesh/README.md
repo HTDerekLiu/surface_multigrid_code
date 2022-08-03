@@ -8,7 +8,7 @@ cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
 make -j8
 ```
-If all goes well, you should be able to find and run the executable `main_bin` directly with no arguments and you will see some `output_s?.obj` files.
+If everything goes well, you should be able to find and run the executable `main_bin` directly with no arguments and you will see some `output_s?.obj` files.
 
 ## Demo
 <img src="../assets/08.png" width="100%">
