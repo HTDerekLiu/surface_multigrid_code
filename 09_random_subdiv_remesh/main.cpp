@@ -1,6 +1,5 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/triangle_triangle_adjacency.h>
-#include <igl/upsample.h>
 #include <igl/writeOBJ.h>
 
 #include <igl/opengl/glfw/Viewer.h>
@@ -43,6 +42,130 @@ int find_row_with_elements(
 	return -1;
 }
 
+void loop_upsample_connecitivy( 
+	const int & n_verts, 
+	const Eigen::MatrixXi & F,
+	Eigen::SparseMatrix<double> & S,
+	Eigen::MatrixXi & NF)
+{
+	// This function is the modified version of igl::upsample. This upsampling stacks faces differently from igl::upsample so that it is consistent with the neural subdivision code
+	using namespace std;
+	using namespace Eigen;
+
+	MatrixXi FF, FFi;
+	igl::triangle_triangle_adjacency(F,FF,FFi);
+
+	// Compute the number and positions of the vertices to insert (on edges)
+	Eigen::MatrixXi NI = Eigen::MatrixXi::Constant(FF.rows(),FF.cols(),-1);
+	Eigen::MatrixXi NIdoubles = Eigen::MatrixXi::Zero(FF.rows(), FF.cols());
+	int counter = 0;
+
+	// Compute the number and positions of the vertices to insert (on edges)
+	for(int i=0;i<FF.rows();++i)
+	{
+		for(int j=0;j<3;++j)
+		{
+			if(NI(i,j) == -1)
+			{
+				NI(i,j) = counter;
+				NIdoubles(i,j) = 0;
+				if (FF(i,j) != -1) {
+					//If it is not a boundary
+					NI(FF(i,j), FFi(i,j)) = counter;
+					NIdoubles(i,j) = 1;
+				}
+				++counter;
+			}
+		}
+	}
+
+	const int& n_odd = n_verts;
+	const int& n_even = counter;
+	const int n_newverts = n_odd + n_even;
+
+	// Construct the subdivision operator S such that NV = S * V
+	vector<Triplet<double>> tripletList;
+
+	// Fill the odd vertices position
+	for (int i=0; i<n_odd; ++i)
+		tripletList.emplace_back(i, i, 1.);
+	// Fill even vertices position
+	for(int i=0;i<FF.rows();++i)
+	{
+		for(int j=0;j<3;++j)
+		{
+			if(NIdoubles(i,j)==0) {
+				tripletList.emplace_back(NI(i,j) + n_odd, F(i,j), 1./2.);
+				tripletList.emplace_back(NI(i,j) + n_odd, F(i,(j+1)%3), 1./2.);
+			}
+		}
+	}
+	S.resize(n_newverts, n_verts);
+  	S.setFromTriplets(tripletList.begin(), tripletList.end());
+
+	// Build the new face list (see https://github.com/HTDerekLiu/neuralSubdiv/blob/master/utils_matlab/midPointUpsample.m to understand the notations) 
+	NF.resize(F.rows()*4,3);
+	int fIdx = 0;
+	// put (f0, i2, i1)
+	for(int i=0; i<F.rows();++i)
+	{
+		int f0 = F(i,0);
+		int i2 = NI(i,0) + n_odd;
+		int i1 = NI(i,2) + n_odd;
+		NF.row(fIdx) << f0, i2, i1;
+		fIdx += 1;
+	}
+	// put (f1, i0, i2)
+	for(int i=0; i<F.rows();++i)
+	{
+		int f1 = F(i,1);
+		int i0 = NI(i,1) + n_odd;
+		int i2 = NI(i,0) + n_odd;
+		NF.row(fIdx) << f1, i0, i2;
+		fIdx += 1;
+	}
+	// put (f2, i1, i0)
+	for(int i=0; i<F.rows();++i)
+	{
+		int f2 = F(i,2);
+		int i1 = NI(i,2) + n_odd;
+		int i0 = NI(i,1) + n_odd;
+		NF.row(fIdx) << f2, i1, i0;
+		fIdx += 1;
+	}
+	// put (f2, i1, i0)
+	for(int i=0; i<F.rows();++i)
+	{
+		int i0 = NI(i,1) + n_odd;
+		int i1 = NI(i,2) + n_odd;
+		int i2 = NI(i,0) + n_odd;
+		NF.row(fIdx) << i0, i1, i2;
+		fIdx += 1;
+	}
+}
+
+void loop_upsample_connecitivy(
+  const Eigen::MatrixXd & V,
+  const Eigen::MatrixXi & F,
+  Eigen::MatrixXd & NV,
+  Eigen::MatrixXi & NF,
+  const int number_of_subdivs)
+{
+	// This function is the modified version of igl::upsample. This upsampling stacks faces differently from igl::upsample so that it is consistent with the neural subdivision code
+	using namespace std;
+	using namespace Eigen;
+
+	NV = V;
+	NF = F;
+	for(int i=0; i<number_of_subdivs; ++i)
+	{
+		MatrixXi tempF = NF;
+		SparseMatrix<double> S;
+		loop_upsample_connecitivy(NV.rows(), tempF, S, NF);
+		NV = (S*NV).eval(); // This .eval is super important
+	}
+}
+
 void loop_upsample_barycentric(
 	const Eigen::MatrixXd & V,
 	const Eigen::MatrixXi & F,
@@ -64,12 +187,12 @@ void loop_upsample_barycentric(
 			MatrixXi tempF = NF;
 			if (ii == 0) // first iteration
 			{
-				igl::upsample(V.rows(), tempF, S, NF);
+				loop_upsample_connecitivy(V.rows(), tempF, S, NF);
 			}
 			else // further iterations
 			{
 				Eigen::SparseMatrix<double> SS;
-				igl::upsample(S.rows(), tempF, SS, NF);
+				loop_upsample_connecitivy(S.rows(), tempF, SS, NF);
 				S = SS * S;
 			}
 		}
@@ -172,7 +295,7 @@ int main(int argc, char *argv[])
 	{
 		MatrixXd NV;
 		MatrixXi NF;
-		igl::upsample(V,F,NV,NF,iter);
+		loop_upsample_connecitivy(V,F,NV,NF,iter);
 		int nV = NV.rows();
 		NV = SV.block(0,0,nV,3);
 		std::string output_name = "../output_s" + std::to_string(iter) + ".obj";
