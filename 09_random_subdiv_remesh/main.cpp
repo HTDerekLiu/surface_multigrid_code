@@ -1,6 +1,7 @@
 #include <igl/read_triangle_mesh.h>
 #include <igl/triangle_triangle_adjacency.h>
 #include <igl/writeOBJ.h>
+#include <igl/unique_rows.h>
 
 #include <igl/opengl/glfw/Viewer.h>
 
@@ -43,104 +44,97 @@ int find_row_with_elements(
 }
 
 void loop_upsample_connecitivy( 
-	const int & n_verts, 
+	const int & nV, 
 	const Eigen::MatrixXi & F,
 	Eigen::SparseMatrix<double> & S,
 	Eigen::MatrixXi & NF)
 {
-	// This function is the modified version of igl::upsample. This upsampling stacks faces differently from igl::upsample so that it is consistent with the neural subdivision code
+	// This function perfoms mid point upsampling with loop subdivision connecivity. This function has consistent vertices/faces with https://github.com/HTDerekLiu/neuralSubdiv/blob/master/utils_matlab/midPointUpsample.m. In order to be consistent, this is slower than igl::upsample
 	using namespace std;
 	using namespace Eigen;
 
-	MatrixXi FF, FFi;
-	igl::triangle_triangle_adjacency(F,FF,FFi);
+	int nF = F.rows();
 
-	// Compute the number and positions of the vertices to insert (on edges)
-	Eigen::MatrixXi NI = Eigen::MatrixXi::Constant(FF.rows(),FF.cols(),-1);
-	Eigen::MatrixXi NIdoubles = Eigen::MatrixXi::Zero(FF.rows(), FF.cols());
-	int counter = 0;
-
-	// Compute the number and positions of the vertices to insert (on edges)
-	for(int i=0;i<FF.rows();++i)
+	// assemble half edge indices
+	MatrixXi hE(3*nF, 2);
 	{
-		for(int j=0;j<3;++j)
+		for (int ii=0; ii<3; ii++)
 		{
-			if(NI(i,j) == -1)
+			for (int f=0; f<nF; f++)
 			{
-				NI(i,j) = counter;
-				NIdoubles(i,j) = 0;
-				if (FF(i,j) != -1) {
-					//If it is not a boundary
-					NI(FF(i,j), FFi(i,j)) = counter;
-					NIdoubles(i,j) = 1;
-				}
-				++counter;
+				int v0 = F(f,ii);
+				int v1 = F(f,(ii+1)%3);
+				if (v0 < v1)
+					hE.row(ii*nF + f) << v0, v1;
+				else if (v1 < v0)
+					hE.row(ii*nF + f) << v1, v0;
+				else
+					assert(false && "invalid face with the same vertex index");
 			}
 		}
 	}
 
-	const int& n_odd = n_verts;
-	const int& n_even = counter;
-	const int n_newverts = n_odd + n_even;
-
-	// Construct the subdivision operator S such that NV = S * V
-	vector<Triplet<double>> tripletList;
-
-	// Fill the odd vertices position
-	for (int i=0; i<n_odd; ++i)
-		tripletList.emplace_back(i, i, 1.);
-	// Fill even vertices position
-	for(int i=0;i<FF.rows();++i)
+	// assemble unique edge and edge map
+	MatrixXi E, uniqueIdx;
 	{
-		for(int j=0;j<3;++j)
+		MatrixXi useless;
+		igl::unique_rows(hE, E, useless, uniqueIdx);
+	}
+
+	// Build the new face list 
+	NF.resize(nF*4,3);
+	{
+		// build hEF
+		MatrixXi hEF(4*nF, 3);
+		int fIdx = 0;
+		for(int f=0; f<F.rows();f++)
 		{
-			if(NIdoubles(i,j)==0) {
-				tripletList.emplace_back(NI(i,j) + n_odd, F(i,j), 1./2.);
-				tripletList.emplace_back(NI(i,j) + n_odd, F(i,(j+1)%3), 1./2.);
-			}
+			hEF.row(fIdx) << F(f,0), nV+f, nV+2*nF+f; // f0, i2, i1
+			fIdx += 1;
 		}
-	}
-	S.resize(n_newverts, n_verts);
-  	S.setFromTriplets(tripletList.begin(), tripletList.end());
+		for(int f=0; f<F.rows();f++)
+		{
+			hEF.row(fIdx) << F(f,1), nV+nF+f, nV+f; // f1, i0, i2
+			fIdx += 1;
+		}
+		for(int f=0; f<F.rows();f++)
+		{
+			hEF.row(fIdx) << F(f,2), nV+2*nF+f, nV+nF+f; // f2, i1, i0
+			fIdx += 1;
+		}
+		for(int f=0; f<F.rows();f++)
+		{
+			hEF.row(fIdx) << nV+nF+f, nV+2*nF+f, nV+f; // i0, i1, i2
+			fIdx += 1;
+		}
 
-	// Build the new face list (see https://github.com/HTDerekLiu/neuralSubdiv/blob/master/utils_matlab/midPointUpsample.m to understand the notations) 
-	NF.resize(F.rows()*4,3);
-	int fIdx = 0;
-	// put (f0, i2, i1)
-	for(int i=0; i<F.rows();++i)
-	{
-		int f0 = F(i,0);
-		int i2 = NI(i,0) + n_odd;
-		int i1 = NI(i,2) + n_odd;
-		NF.row(fIdx) << f0, i2, i1;
-		fIdx += 1;
+		// build hE2E
+		int nIdx = uniqueIdx.rows();
+		VectorXi hE2E(nV+nIdx);
+		for (int v=0; v<nV; v++)
+			hE2E(v) = v;
+		hE2E.tail(nIdx) = uniqueIdx.array() + nV;
+
+		// build F
+		for (int r=0; r<4*nF; r++)
+			for (int c=0; c<3; c++)
+				NF(r,c) = hE2E(hEF(r,c));
 	}
-	// put (f1, i0, i2)
-	for(int i=0; i<F.rows();++i)
-	{
-		int f1 = F(i,1);
-		int i0 = NI(i,1) + n_odd;
-		int i2 = NI(i,0) + n_odd;
-		NF.row(fIdx) << f1, i0, i2;
-		fIdx += 1;
-	}
-	// put (f2, i1, i0)
-	for(int i=0; i<F.rows();++i)
-	{
-		int f2 = F(i,2);
-		int i1 = NI(i,2) + n_odd;
-		int i0 = NI(i,1) + n_odd;
-		NF.row(fIdx) << f2, i1, i0;
-		fIdx += 1;
-	}
-	// put (f2, i1, i0)
-	for(int i=0; i<F.rows();++i)
-	{
-		int i0 = NI(i,1) + n_odd;
-		int i1 = NI(i,2) + n_odd;
-		int i2 = NI(i,0) + n_odd;
-		NF.row(fIdx) << i0, i1, i2;
-		fIdx += 1;
+
+	// build subdivision operator S such that NV = S * V
+	int nE = E.rows();
+	S.resize(nE+nV, nV);
+	{	
+		vector<Triplet<double>> IJV;
+		// even vertices
+		for (int e=0; e<nE; e++)
+			for (int c=0; c<E.cols(); c++)
+				IJV.emplace_back(e+nV, E(e,c), 0.5);
+		// odd vertices
+		for (int v=0; v<nV; v++)
+			IJV.emplace_back(v, v, 1.0);
+		// build subdiv operator
+		S.setFromTriplets(IJV.begin(), IJV.end());
 	}
 }
 
@@ -151,7 +145,7 @@ void loop_upsample_connecitivy(
   Eigen::MatrixXi & NF,
   const int number_of_subdivs)
 {
-	// This function is the modified version of igl::upsample. This upsampling stacks faces differently from igl::upsample so that it is consistent with the neural subdivision code
+	// This function perfoms mid point upsampling with loop subdivision connecivity. This function has consistent vertices/faces with https://github.com/HTDerekLiu/neuralSubdiv/blob/master/utils_matlab/midPointUpsample.m.
 	using namespace std;
 	using namespace Eigen;
 
@@ -302,3 +296,4 @@ int main(int argc, char *argv[])
 		igl::writeOBJ(output_name, NV,NF);
 	}
 }
+
